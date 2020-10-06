@@ -34,21 +34,24 @@ func main() {
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 
-	err := godotenv.Load()
+	err := godotenv.Load("gohass-mqtt-winclient.env")
 	if err != nil {
 		log.Fatal("Error: cannot load .env file")
 	}
-
-	uname := os.Getenv("MQTT_USERNAME")
-	pass := os.Getenv("MQTT_PASSWORD")
-	if uname == "" {
+	mqttURI := os.Getenv("MQTT_URI")
+	mqttUname := os.Getenv("MQTT_USERNAME")
+	mqttPass := os.Getenv("MQTT_PASSWORD")
+	if mqttURI == "" {
+		log.Fatal("Error: .env file does not contain \"MQTT_URI\"")
+	}
+	if mqttUname == "" {
 		log.Fatal("Error: .env file does not contain \"MQTT_USERNAME\"")
 	}
-	if pass == "" {
+	if mqttPass == "" {
 		log.Fatal("Error: .env file does not contain \"MQTT_PASSWORD\"")
 	}
 
-	opts := mqtt.NewClientOptions().AddBroker("tcp://192.168.1.150:1883").SetClientID("gohass-mqtt").SetUsername(uname).SetPassword(pass)
+	opts := mqtt.NewClientOptions().AddBroker(mqttURI).SetClientID("gohass-mqtt-winclient").SetUsername(mqttUname).SetPassword(mqttPass)
 	opts.SetKeepAlive(60 * time.Second)
 	opts.SetPingTimeout(1 * time.Second)
 
