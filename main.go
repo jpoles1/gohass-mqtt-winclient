@@ -52,6 +52,9 @@ func main() {
 	opts.SetKeepAlive(60 * time.Second)
 	opts.SetPingTimeout(1 * time.Second)
 
+	mqtt.ERROR = log.New(os.Stdout, "", 0)
+	mqtt.CRITICAL = log.New(os.Stdout, "", 0)
+
 	client := mqtt.NewClient(opts)
 	if token := client.Connect(); token.Wait() && token.Error() != nil {
 		panic(token.Error())
