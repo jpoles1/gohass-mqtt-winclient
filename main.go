@@ -41,6 +41,7 @@ func main() {
 	mqttURI := os.Getenv("MQTT_URI")
 	mqttUname := os.Getenv("MQTT_USERNAME")
 	mqttPass := os.Getenv("MQTT_PASSWORD")
+	mqttTopic := os.Getenv("MQTT_TOPIC")
 	if mqttURI == "" {
 		log.Fatal("Error: .env file does not contain \"MQTT_URI\"")
 	}
@@ -49,6 +50,9 @@ func main() {
 	}
 	if mqttPass == "" {
 		log.Fatal("Error: .env file does not contain \"MQTT_PASSWORD\"")
+	}
+	if mqttTopic == "" {
+		log.Fatal("Error: .env file does not contain \"MQTT_TOPIC\"")
 	}
 
 	opts := mqtt.NewClientOptions().AddBroker(mqttURI).SetClientID("gohass-mqtt-winclient").SetUsername(mqttUname).SetPassword(mqttPass)
@@ -66,7 +70,7 @@ func main() {
 	log.Println("Starting MQTT client")
 
 	// Subscribe
-	if token := client.Subscribe("computer/power", 0, powerHandler); token.Wait() && token.Error() != nil {
+	if token := client.Subscribe(mqttTopic, 0, powerHandler); token.Wait() && token.Error() != nil {
 		fmt.Println(token.Error())
 		os.Exit(1)
 	}
