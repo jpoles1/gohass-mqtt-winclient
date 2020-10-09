@@ -12,6 +12,7 @@ import (
 	"github.com/joho/godotenv"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
+	gonanoid "github.com/matoous/go-nanoid"
 )
 
 func sleepWindows() {
@@ -30,13 +31,21 @@ var powerHandler mqtt.MessageHandler = func(client mqtt.Client, msg mqtt.Message
 	}
 }
 
+var connectHandler mqtt.OnConnectHandler = func(client mqtt.Client) {
+	log.Println("Connected to MQTT server")
+}
+
+var disconnectHandler mqtt.ConnectionLostHandler = func(client mqtt.Client, err error) {
+	log.Println(fmt.Sprintf("Disconnected from MQTT server: %s", err))
+}
+
 func main() {
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 
 	err := godotenv.Load("gohass-mqtt-winclient.env")
 	if err != nil {
-		log.Fatal("Error: cannot load .env file")
+		log.Fatal("Error: cannot load gohass-mqtt-winclient.env file")
 	}
 	mqttURI := os.Getenv("MQTT_URI")
 	mqttUname := os.Getenv("MQTT_USERNAME")
@@ -54,13 +63,19 @@ func main() {
 	if mqttTopic == "" {
 		log.Fatal("Error: .env file does not contain \"MQTT_TOPIC\"")
 	}
-
-	opts := mqtt.NewClientOptions().AddBroker(mqttURI).SetClientID("gohass-mqtt-winclient").SetUsername(mqttUname).SetPassword(mqttPass)
+	nanoid, err := gonanoid.Nanoid()
+	if err != nil {
+		log.Fatal(fmt.Sprintf("Error: cannot generate client ID: %s", err))
+	}
+	clientid := fmt.Sprintf("gohass-mqtt-winclient-%s", nanoid)
+	opts := mqtt.NewClientOptions().AddBroker(mqttURI).SetClientID(clientid)
+	opts.SetUsername(mqttUname).SetPassword(mqttPass)
+	opts.SetOnConnectHandler(connectHandler).SetConnectionLostHandler(disconnectHandler)
 	opts.SetKeepAlive(60 * time.Second)
 	opts.SetPingTimeout(1 * time.Second)
 
-	mqtt.ERROR = log.New(os.Stdout, "", 0)
-	mqtt.CRITICAL = log.New(os.Stdout, "", 0)
+	mqtt.ERROR = log.New(os.Stdout, "ERR:", 0)
+	mqtt.CRITICAL = log.New(os.Stdout, "CRIT:", 0)
 
 	client := mqtt.NewClient(opts)
 	if token := client.Connect(); token.Wait() && token.Error() != nil {
