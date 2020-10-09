@@ -79,7 +79,9 @@ func main() {
 
 	client := mqtt.NewClient(opts)
 	if token := client.Connect(); token.Wait() && token.Error() != nil {
-		panic(token.Error())
+		log.Println(fmt.Sprintf("FATAL ERROR: %s", token.Error()))
+		fmt.Println("Failed to connect, press ENTER to exit...")
+		fmt.Scanln()
 	}
 
 	log.Println("Starting MQTT client")
